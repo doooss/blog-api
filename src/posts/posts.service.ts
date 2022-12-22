@@ -55,7 +55,27 @@ export class PostsService {
     }
 
     async update(id: string, updatePostDto: UpdatePostDto) {
-        return `This action updates a #${id} post`;
+        const { category, tags, ...post } = updatePostDto;
+
+        const beforePost = await this.postRepository.findOne({ where: { id }, relations: ['category', 'tags'] });
+
+        const categoryData = await this.categoryRepository.findOneBy({
+            id: category,
+        });
+
+        const tagData = await this.tagRepository.findBy({
+            id: In(tags),
+        });
+
+        await this.postRepository.merge(beforePost, {
+            ...post,
+            category: categoryData,
+            tags: tagData,
+        });
+
+        const postData = await this.postRepository.save(beforePost);
+
+        return postData;
     }
 
     async remove(id: string): Promise<string> {
